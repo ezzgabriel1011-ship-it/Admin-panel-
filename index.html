@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10122A">
+<title>Panel de administración · cartas</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#0F1229;
+    --bg-deep2:#241B3A;
+    --gold:#E7B95C;
+    --gold-soft:#F0D28E;
+    --rose:#E8828F;
+    --text-soft:#DAD5EA;
+    --text-mut:#9C97B8;
+    --card:rgba(255,255,255,.05);
+    --card-border:rgba(255,255,255,.13);
+    --danger:#E8828F;
+    --ok:#8FD19E;
+    --max:640px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    background:linear-gradient(180deg,var(--bg-deep) 0%,var(--bg-deep2) 55%,#1a1430 100%);
+    color:var(--text-soft); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Playfair Display',serif; margin:0; font-weight:700;}
+  .wrap{max-width:var(--max); margin:0 auto; padding:0 20px 140px;}
+
+  header{padding:44px 20px 8px; text-align:center;}
+  .eyebrow{text-transform:uppercase; letter-spacing:.18em; font-size:.68rem; color:var(--gold-soft); font-weight:600; margin-bottom:10px;}
+  header h1{font-size:1.7rem; color:#fff;}
+  header p{color:var(--text-mut); font-size:.85rem; margin-top:8px; line-height:1.5;}
+
+  .step{
+    margin-top:26px; background:var(--card); border:1px solid var(--card-border);
+    border-radius:18px; padding:20px 18px;
+  }
+  .step-head{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+  .step-num{
+    width:24px; height:24px; border-radius:50%; background:rgba(231,185,92,.15);
+    border:1px solid rgba(231,185,92,.4); color:var(--gold); font-size:.75rem; font-weight:700;
+    display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  .step-title{font-size:.95rem; font-weight:600; color:#fff;}
+  .step-sub{font-size:.78rem; color:var(--text-mut); margin:0 0 14px 34px; line-height:1.5;}
+
+  /* dropzone */
+  .drop{
+    border:1.5px dashed rgba(255,255,255,.22); border-radius:14px; padding:26px 16px;
+    text-align:center; cursor:pointer; transition:border-color .2s ease, background .2s ease;
+  }
+  .drop:hover, .drop.drag{border-color:var(--gold); background:rgba(231,185,92,.06);}
+  .drop .ic{font-size:1.6rem; display:block; margin-bottom:8px;}
+  .drop .main{font-size:.85rem; color:var(--text-soft);}
+  .drop .sub{font-size:.72rem; color:var(--text-mut); margin-top:4px;}
+  input[type=file]{display:none;}
+
+  .status{
+    margin-top:12px; padding:10px 12px; border-radius:10px; font-size:.8rem;
+    display:none; align-items:center; gap:8px;
+  }
+  .status.show{display:flex;}
+  .status.ok{background:rgba(143,209,158,.1); border:1px solid rgba(143,209,158,.3); color:var(--ok);}
+  .status.err{background:rgba(232,130,143,.1); border:1px solid rgba(232,130,143,.35); color:var(--danger);}
+
+  /* fields */
+  label{display:block; font-size:.75rem; color:var(--text-mut); margin-bottom:6px; font-weight:500;}
+  input[type=text], input[type=date], textarea{
+    width:100%; background:rgba(0,0,0,.2); border:1px solid rgba(255,255,255,.14);
+    border-radius:10px; padding:11px 12px; color:#fff; font-family:'Inter',sans-serif;
+    font-size:.9rem; outline:none; transition:border-color .15s ease;
+  }
+  input[type=text]:focus, input[type=date]:focus, textarea:focus{border-color:var(--gold);}
+  textarea{resize:vertical; min-height:90px; line-height:1.5;}
+  .field{margin-bottom:14px;}
+  .field:last-child{margin-bottom:0;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:420px){ .row2{grid-template-columns:1fr;} }
+
+  fieldset{border:none; padding:0; margin:0;}
+  fieldset[disabled] .step{opacity:.45; pointer-events:none;}
+
+  /* cartas list */
+  .carta-item{
+    background:rgba(0,0,0,.16); border:1px solid var(--card-border); border-radius:14px;
+    padding:16px; margin-bottom:14px; position:relative;
+  }
+  .carta-item-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+  .carta-badge{
+    font-size:.68rem; padding:4px 9px; border-radius:20px; font-weight:600;
+    display:inline-flex; align-items:center; gap:5px;
+  }
+  .carta-badge.unlocked{background:rgba(231,185,92,.15); color:var(--gold-soft); border:1px solid rgba(231,185,92,.3);}
+  .carta-badge.locked{background:rgba(255,255,255,.06); color:var(--text-mut); border:1px solid rgba(255,255,255,.12);}
+  .carta-actions{display:flex; gap:4px;}
+  .icon-btn{
+    background:none; border:none; color:var(--text-mut); cursor:pointer; width:30px; height:30px;
+    border-radius:8px; font-size:.95rem; display:flex; align-items:center; justify-content:center;
+    transition:background .15s ease, color .15s ease;
+  }
+  .icon-btn:hover{background:rgba(255,255,255,.08); color:#fff;}
+  .icon-btn.del:hover{background:rgba(232,130,143,.15); color:var(--danger);}
+
+  .add-btn{
+    width:100%; margin-top:4px; padding:13px; border-radius:12px; border:1.5px dashed rgba(231,185,92,.4);
+    background:rgba(231,185,92,.06); color:var(--gold-soft); font-family:'Inter',sans-serif; font-weight:600;
+    font-size:.85rem; cursor:pointer; transition:background .15s ease;
+  }
+  .add-btn:hover{background:rgba(231,185,92,.12);}
+  .empty-hint{text-align:center; color:var(--text-mut); font-size:.8rem; padding:18px 0;}
+
+  /* bottom bar */
+  .bottombar{
+    position:fixed; left:0; right:0; bottom:0; z-index:50;
+    background:rgba(15,18,41,.92); backdrop-filter:blur(14px);
+    border-top:1px solid rgba(255,255,255,.1); padding:14px 20px calc(14px + env(safe-area-inset-bottom));
+  }
+  .bottombar-inner{max-width:var(--max); margin:0 auto; display:flex; align-items:center; gap:12px;}
+  .dl-btn{
+    flex:1; padding:14px; border-radius:12px; border:none; background:var(--gold); color:#241305;
+    font-family:'Inter',sans-serif; font-weight:700; font-size:.92rem; cursor:pointer;
+    transition:transform .1s ease, opacity .15s ease;
+  }
+  .dl-btn:disabled{opacity:.4; cursor:not-allowed;}
+  .dl-btn:not(:disabled):active{transform:scale(.98);}
+  .dl-hint{font-size:.68rem; color:var(--text-mut); text-align:center; margin-top:8px;}
+
+  .filename{font-size:.72rem; color:var(--text-mut); word-break:break-all;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">herramienta privada</div>
+    <h1>Panel de cartas 💌</h1>
+    <p>Sube tu página, añade o edita cartas y fechas, y descarga la versión actualizada. No hace falta tocar código.</p>
+  </header>
+
+  <!-- PASO 1: subir archivo -->
+  <div class="step">
+    <div class="step-head"><span class="step-num">1</span><span class="step-title">Sube tu página actual</span></div>
+    <p class="step-sub">El archivo .html que ya tienes guardado (el que le mandaste a tu pareja).</p>
+    <label id="drop" class="drop" for="file-input">
+      <span class="ic">📄</span>
+      <span class="main">Toca para elegir el archivo</span>
+      <span class="sub">o arrástralo aquí</span>
+    </label>
+    <input type="file" id="file-input" accept=".html,text/html">
+    <div class="status" id="status"></div>
+  </div>
+
+  <fieldset id="editor" disabled>
+    <!-- PASO 2: fechas -->
+    <div class="step">
+      <div class="step-head"><span class="step-num">2</span><span class="step-title">Fechas clave</span></div>
+      <p class="step-sub">La fecha del contador y la del mensaje especial de cierre.</p>
+      <div class="row2">
+        <div class="field">
+          <label for="start-date">Llevan juntos desde</label>
+          <input type="date" id="start-date">
+        </div>
+        <div class="field">
+          <label for="special-date">Fecha del mensaje especial</label>
+          <input type="date" id="special-date">
+        </div>
+      </div>
+    </div>
+
+    <!-- PASO 3: cartas -->
+    <div class="step">
+      <div class="step-head"><span class="step-num">3</span><span class="step-title">Cartas</span></div>
+      <p class="step-sub">Se ordenan solas por fecha al descargar. Las fechas futuras salen bloqueadas hasta que llegan.</p>
+      <div id="cartas-list"></div>
+      <div class="empty-hint" id="empty-hint" style="display:none;">Todavía no hay cartas. Añade la primera 👇</div>
+      <button class="add-btn" id="add-carta" type="button">+ Añadir carta</button>
+    </div>
+  </fieldset>
+</div>
+
+<div class="bottombar">
+  <div class="bottombar-inner" style="flex-direction:column; align-items:stretch;">
+    <div style="display:flex; gap:12px; align-items:center;">
+      <button class="dl-btn" id="download-btn" disabled>⬇️ Descargar página actualizada</button>
+    </div>
+    <div class="dl-hint" id="dl-hint">Sube tu página en el paso 1 para activar la descarga</div>
+  </div>
+</div>
+
+<script>
+const CARTAS_START = '/* ===== CARTAS_START ===== */';
+const CARTAS_END   = '/* ===== CARTAS_END ===== */';
+
+let originalHtml = null;
+let cartas = [];
+let sourceFileName = 'nuestra-historia.html';
+
+const els = {
+  drop: document.getElementById('drop'),
+  fileInput: document.getElementById('file-input'),
+  status: document.getElementById('status'),
+  editor: document.getElementById('editor'),
+  startDate: document.getElementById('start-date'),
+  specialDate: document.getElementById('special-date'),
+  list: document.getElementById('cartas-list'),
+  emptyHint: document.getElementById('empty-hint'),
+  addBtn: document.getElementById('add-carta'),
+  dlBtn: document.getElementById('download-btn'),
+  dlHint: document.getElementById('dl-hint'),
+};
+
+/* ---------- carga de archivo ---------- */
+els.drop.addEventListener('click', (e) => { e.preventDefault(); els.fileInput.click(); });
+els.fileInput.addEventListener('change', (e) => {
+  if(e.target.files[0]) handleFile(e.target.files[0]);
+});
+['dragover','dragenter'].forEach(ev => els.drop.addEventListener(ev, (e) => { e.preventDefault(); els.drop.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => els.drop.addEventListener(ev, (e) => { e.preventDefault(); els.drop.classList.remove('drag'); }));
+els.drop.addEventListener('drop', (e) => {
+  const f = e.dataTransfer.files[0];
+  if(f) handleFile(f);
+});
+
+function showStatus(kind, msg){
+  els.status.className = 'status show ' + kind;
+  els.status.textContent = msg;
+}
+
+async function handleFile(file){
+  sourceFileName = file.name || 'nuestra-historia.html';
+  try{
+    const text = await file.text();
+    parseHtml(text);
+  }catch(err){
+    showStatus('err', '❌ No se pudo leer el archivo. Prueba de nuevo.');
+  }
+}
+
+function parseHtml(text){
+  const s = text.indexOf(CARTAS_START);
+  const e = text.indexOf(CARTAS_END);
+  if(s === -1 || e === -1 || e < s){
+    showStatus('err', '❌ Este archivo no parece ser el de tu página de regalo (no encontré el bloque de cartas). Sube el .html original.');
+    return;
+  }
+  const block = text.slice(s + CARTAS_START.length, e).trim();
+  const m = block.match(/const CARTAS\s*=\s*([\s\S]*);\s*$/);
+  if(!m){
+    showStatus('err', '❌ No pude leer las cartas de este archivo. Puede que el formato haya cambiado a mano.');
+    return;
+  }
+  let parsedCartas;
+  try{
+    parsedCartas = new Function('"use strict"; return (' + m[1] + ')')();
+    if(!Array.isArray(parsedCartas)) throw new Error('no es un array');
+  }catch(err){
+    showStatus('err', '❌ Las cartas de este archivo tienen un error de formato y no se pudieron leer.');
+    return;
+  }
+
+  const mStart = text.match(/const START_DATE\s*=\s*parseLocalDate\(\s*"(\d{4}-\d{2}-\d{2})"\s*\)/);
+  const mSpecial = text.match(/const SPECIAL_DATE\s*=\s*parseLocalDate\(\s*"(\d{4}-\d{2}-\d{2})"\s*\)/);
+  if(!mStart || !mSpecial){
+    showStatus('err', '❌ No encontré las fechas del contador en este archivo.');
+    return;
+  }
+
+  originalHtml = text;
+  cartas = parsedCartas.map(c => ({fecha:c.fecha||'', titulo:c.titulo||'', contenido:c.contenido||''}));
+  els.startDate.value = mStart[1];
+  els.specialDate.value = mSpecial[1];
+
+  showStatus('ok', `✅ Cargado "${sourceFileName}" — ${cartas.length} carta${cartas.length===1?'':'s'} encontrada${cartas.length===1?'':'s'}.`);
+  els.editor.disabled = false;
+  els.dlBtn.disabled = false;
+  els.dlHint.textContent = 'Se descargará una copia nueva de tu página con estos cambios';
+  renderCartas();
+}
+
+/* ---------- render de cartas ---------- */
+function fmtBadge(fechaStr){
+  if(!fechaStr) return {cls:'locked', txt:'sin fecha'};
+  const [y,mo,d] = fechaStr.split('-').map(Number);
+  if(!y || !mo || !d) return {cls:'locked', txt:'fecha inválida'};
+  const target = new Date(y, mo-1, d);
+  const now = new Date();
+  if(target <= now) return {cls:'unlocked', txt:'💌 ya desbloqueada'};
+  const days = Math.ceil((target - now) / 86400000);
+  return {cls:'locked', txt:`🔒 en ${days} día${days===1?'':'s'}`};
+}
+
+function renderCartas(){
+  els.list.innerHTML = '';
+  els.emptyHint.style.display = cartas.length ? 'none' : 'block';
+
+  cartas.forEach((carta, i) => {
+    const badge = fmtBadge(carta.fecha);
+    const item = document.createElement('div');
+    item.className = 'carta-item';
+    item.innerHTML = `
+      <div class="carta-item-head">
+        <span class="carta-badge ${badge.cls}">${badge.txt}</span>
+        <div class="carta-actions">
+          <button class="icon-btn up" type="button" title="Subir" ${i===0?'disabled style="opacity:.25"':''}>↑</button>
+          <button class="icon-btn down" type="button" title="Bajar" ${i===cartas.length-1?'disabled style="opacity:.25"':''}>↓</button>
+          <button class="icon-btn del" type="button" title="Eliminar">🗑️</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Fecha en que se desbloquea</label>
+        <input type="date" class="f-fecha" value="${carta.fecha}">
+      </div>
+      <div class="field">
+        <label>Título</label>
+        <input type="text" class="f-titulo" value="${escapeAttr(carta.titulo)}" placeholder="Título de la carta">
+      </div>
+      <div class="field">
+        <label>Contenido</label>
+        <textarea class="f-contenido" placeholder="Escribe aquí tu carta...">${escapeHtml(carta.contenido)}</textarea>
+      </div>
+    `;
+    item.querySelector('.f-fecha').addEventListener('input', (e) => {
+      cartas[i].fecha = e.target.value;
+      const b = item.querySelector('.carta-badge');
+      const nb = fmtBadge(cartas[i].fecha);
+      b.className = 'carta-badge ' + nb.cls;
+      b.textContent = nb.txt;
+    });
+    item.querySelector('.f-titulo').addEventListener('input', (e) => { cartas[i].titulo = e.target.value; });
+    item.querySelector('.f-contenido').addEventListener('input', (e) => { cartas[i].contenido = e.target.value; });
+    item.querySelector('.up').addEventListener('click', () => { if(i>0){ swap(i,i-1); renderCartas(); } });
+    item.querySelector('.down').addEventListener('click', () => { if(i<cartas.length-1){ swap(i,i+1); renderCartas(); } });
+    item.querySelector('.del').addEventListener('click', () => {
+      if(confirm('¿Eliminar esta carta? No se puede deshacer.')){
+        cartas.splice(i,1);
+        renderCartas();
+      }
+    });
+    els.list.appendChild(item);
+  });
+}
+
+function swap(a,b){ const t = cartas[a]; cartas[a] = cartas[b]; cartas[b] = t; }
+function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escapeAttr(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+els.addBtn.addEventListener('click', () => {
+  cartas.push({fecha:'', titulo:'', contenido:''});
+  renderCartas();
+  const last = els.list.lastElementChild;
+  if(last){
+    last.scrollIntoView({behavior:'smooth', block:'center'});
+    last.querySelector('.f-titulo').focus();
+  }
+});
+
+/* ---------- descarga ---------- */
+function buildCartasLiteral(list){
+  const items = list.map(c => (
+`  {
+    fecha: ${JSON.stringify(c.fecha)},
+    titulo: ${JSON.stringify(c.titulo)},
+    contenido: ${JSON.stringify(c.contenido)}
+  }`
+  ));
+  return 'const CARTAS = [\n' + items.join(',\n') + '\n];';
+}
+
+els.dlBtn.addEventListener('click', () => {
+  if(!originalHtml) return;
+
+  const badCarta = cartas.find(c => !c.fecha || !c.titulo.trim() || !c.contenido.trim());
+  if(badCarta){
+    if(!confirm('Alguna carta tiene campos vacíos (fecha, título o contenido). ¿Descargar de todas formas?')) return;
+  }
+
+  const sorted = [...cartas].sort((a,b) => (a.fecha||'').localeCompare(b.fecha||''));
+  const newBlock = '\n' + buildCartasLiteral(sorted) + '\n';
+
+  const s = originalHtml.indexOf(CARTAS_START) + CARTAS_START.length;
+  const e = originalHtml.indexOf(CARTAS_END);
+  let html = originalHtml.slice(0, s) + newBlock + originalHtml.slice(e);
+
+  if(els.startDate.value){
+    html = html.replace(/const START_DATE\s*=\s*parseLocalDate\(\s*"[\d-]+"\s*\)/, `const START_DATE   = parseLocalDate("${els.startDate.value}")`);
+  }
+  if(els.specialDate.value){
+    html = html.replace(/const SPECIAL_DATE\s*=\s*parseLocalDate\(\s*"[\d-]+"\s*\)/, `const SPECIAL_DATE = parseLocalDate("${els.specialDate.value}")`);
+  }
+
+  const blob = new Blob([html], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = sourceFileName || 'nuestra-historia.html';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+</script>
+</body>
+</html>
